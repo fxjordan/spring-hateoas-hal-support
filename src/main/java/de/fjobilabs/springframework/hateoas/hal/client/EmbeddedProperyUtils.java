@@ -20,21 +20,26 @@ public class EmbeddedProperyUtils {
     private EmbeddedProperyUtils() {
     }
     
-    public static Map<String, Class<?>> createEmbeddedResourcesTypesMap(Class<?> type) {
-        Map<String, Class<?>> types = new HashMap<>();
+    public static Map<String, EmbeddedResourcePropertyDescriptor> createPropertyDescriptorMap(
+            Class<?> type) {
+        Map<String, EmbeddedResourcePropertyDescriptor> propetyDescriptors = new HashMap<>();
         PropertyDescriptor[] descriptors = BeanUtils.getPropertyDescriptors(type);
         for (PropertyDescriptor descriptor : descriptors) {
-            String name = getEmbeddedResourceName(descriptor);
-            if (name != null) {
-                types.put(name, descriptor.getPropertyType());
+            EmbeddedResourcePropertyDescriptor propertyDescriptor = createEmbeddedResourcePropertyDescriptor(
+                    descriptor);
+            if (propertyDescriptor != null) {
+                propetyDescriptors.put(propertyDescriptor.getRelationName(), propertyDescriptor);
             }
         }
-        return types;
+        return propetyDescriptors;
     }
     
-    public static void setEmbeddedResources(Object instance, Map<String, Object> properties) {
+    public static void setEmbeddedResources(
+            Map<String, EmbeddedResourcePropertyDescriptor> propertyDescriptors, Object instance,
+            Map<String, Object> properties) {
         for (Entry<String, Object> property : properties.entrySet()) {
-            PropertyDescriptor descriptor = findPropertyDescriptor(instance, property.getKey());
+            PropertyDescriptor descriptor = propertyDescriptors.get(property.getKey())
+                    .getDescriptor();
             setEmbeddedResource(instance, descriptor, property.getValue());
         }
     }
@@ -60,33 +65,59 @@ public class EmbeddedProperyUtils {
         }
     }
     
-    private static PropertyDescriptor findPropertyDescriptor(Object instance, String name) {
-        PropertyDescriptor[] descriptors = BeanUtils.getPropertyDescriptors(instance.getClass());
-        for (PropertyDescriptor descriptor : descriptors) {
-            if (name.equals(getEmbeddedResourceName(descriptor))) {
-                return descriptor;
-            }
+    private static EmbeddedResourcePropertyDescriptor createEmbeddedResourcePropertyDescriptor(
+            PropertyDescriptor descriptor) {
+        EmbeddedResourcePropertyDescriptor propertyDescriptor = getPropertyDescriptorFromMethod(
+                descriptor.getReadMethod(), descriptor);
+        if (propertyDescriptor == null) {
+            propertyDescriptor = getPropertyDescriptorFromMethod(descriptor.getWriteMethod(),
+                    descriptor);
         }
-        throw new RuntimeException(
-                "Failed to find property '" + name + "' for instance " + instance);
+        return propertyDescriptor;
     }
     
-    private static String getEmbeddedResourceName(PropertyDescriptor descriptor) {
-        String name = getPropertyNameFromMethod(descriptor.getReadMethod());
-        if (name == null) {
-            name = getPropertyNameFromMethod(descriptor.getWriteMethod());
-        }
-        return name;
-    }
-    
-    private static String getPropertyNameFromMethod(Method method) {
+    private static EmbeddedResourcePropertyDescriptor getPropertyDescriptorFromMethod(Method method,
+            PropertyDescriptor descriptor) {
         if (method == null) {
             return null;
         }
         Embedded annotation = AnnotationUtils.getAnnotation(method, Embedded.class);
         if (annotation != null) {
-            return annotation.value();
+            return new EmbeddedResourcePropertyDescriptor(descriptor, annotation.value(),
+                    descriptor.getPropertyType(), annotation.collectionContentType());
         }
         return null;
+    }
+    
+    public static class EmbeddedResourcePropertyDescriptor {
+        
+        private PropertyDescriptor descriptor;
+        private String relationName;
+        private Class<?> type;
+        private Class<?> collectionContentType;
+        
+        public EmbeddedResourcePropertyDescriptor(PropertyDescriptor descriptor,
+                String relationName, Class<?> type, Class<?> collectionContentType) {
+            this.descriptor = descriptor;
+            this.relationName = relationName;
+            this.type = type;
+            this.collectionContentType = collectionContentType;
+        }
+        
+        public PropertyDescriptor getDescriptor() {
+            return descriptor;
+        }
+        
+        public String getRelationName() {
+            return relationName;
+        }
+        
+        public Class<?> getType() {
+            return type;
+        }
+        
+        public Class<?> getCollectionContentType() {
+            return collectionContentType;
+        }
     }
 }

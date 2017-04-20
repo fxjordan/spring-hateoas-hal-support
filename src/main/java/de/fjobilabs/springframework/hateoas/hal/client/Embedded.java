@@ -15,4 +15,17 @@ import java.lang.annotation.Target;
 public @interface Embedded {
     
     String value();
+    
+    Class<?> collectionContentType() default DefaultCollectionContentType.class;
+    
+    /**
+     * Empty class to have a default value for the
+     * {@link Embedded#collectionContentType()} property.
+     * 
+     * @author Felix Jordan
+     * @since 20.04.2017 - 00:59:42
+     * @version 1.0
+     */
+    public static final class DefaultCollectionContentType {
+    }
 }

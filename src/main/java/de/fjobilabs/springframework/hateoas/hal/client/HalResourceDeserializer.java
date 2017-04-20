@@ -1,11 +1,14 @@
 package de.fjobilabs.springframework.hateoas.hal.client;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.beans.BeanUtils;
 import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.hateoas.Resources;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonParser;
@@ -17,6 +20,9 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.deser.ContextualDeserializer;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.type.TypeFactory;
+
+import de.fjobilabs.springframework.hateoas.hal.client.EmbeddedProperyUtils.EmbeddedResourcePropertyDescriptor;
 
 /**
  * @author Felix Jordan
@@ -33,7 +39,7 @@ public class HalResourceDeserializer extends StdDeserializer<HalResource>
     
     private final Class<?> targetClass;
     private final Map<String, Class<?>> propertyTypes;
-    private final Map<String, Class<?>> embeddedResourceTypes;
+    private final Map<String, EmbeddedResourcePropertyDescriptor> embeddedResourcePropertyDescriptors;
     private boolean ignoreUnknownProperties;
     
     protected HalResourceDeserializer() {
@@ -44,16 +50,14 @@ public class HalResourceDeserializer extends StdDeserializer<HalResource>
         super(targetClass);
         this.targetClass = targetClass;
         this.propertyTypes = PropertyUtils.createPropertyTypesMap(targetClass);
-        this.embeddedResourceTypes = EmbeddedProperyUtils
-                .createEmbeddedResourcesTypesMap(targetClass);
+        this.embeddedResourcePropertyDescriptors = EmbeddedProperyUtils
+                .createPropertyDescriptorMap(targetClass);
         this.ignoreUnknownProperties = shouldIgnoreUnknownProperties(targetClass);
     }
     
     @Override
     public HalResource deserialize(JsonParser parser, DeserializationContext context)
             throws IOException, JsonProcessingException {
-        System.out.println("Deserializing class: " + this.targetClass);
-        
         if (parser.getCurrentToken() != JsonToken.START_OBJECT) {
             throw new IOException("Invalid token, expected START_OBJECT");
         }
@@ -64,14 +68,13 @@ public class HalResourceDeserializer extends StdDeserializer<HalResource>
         while (parser.nextToken() != JsonToken.END_OBJECT) {
             String key = parser.getCurrentName();
             parser.nextToken();
-            System.out.println("key: " + key);
             
             if (EMBEDDED_ELEMENT_NAME.equals(key)) {
                 while (parser.nextToken() != JsonToken.END_OBJECT) {
                     String embeddedKey = parser.getCurrentName();
-                    System.out.println("embedded key: " + embeddedKey);
                     parser.nextToken();
-                    Object embeddedResource = handleEmbeddedResource(embeddedKey, parser);
+                    Object embeddedResource = handleEmbeddedResource(embeddedKey, parser,
+                            context.getTypeFactory());
                     if (embeddedResource != null) {
                         embeddedResources.put(embeddedKey, embeddedResource);
                     }
@@ -93,12 +96,9 @@ public class HalResourceDeserializer extends StdDeserializer<HalResource>
     public JsonDeserializer<?> createContextual(DeserializationContext context,
             BeanProperty property) throws JsonMappingException {
         Class<?> clazz = context.getContextualType().getRawClass();
-        System.out.println("class to deserialize: " + clazz);
         if (this.targetClass == clazz) {
-            System.out.println("Deserializer is already configured for: " + clazz);
             return this;
         }
-        System.out.println("Creating contextual deserializer for class: " + clazz);
         return new HalResourceDeserializer(clazz);
     }
     
@@ -107,8 +107,9 @@ public class HalResourceDeserializer extends StdDeserializer<HalResource>
         Object instance = BeanUtils.instantiateClass(this.targetClass);
         
         PropertyUtils.setProperties(instance, properties);
-        EmbeddedProperyUtils.setEmbeddedResources(instance, embeddedResources);
-        
+        EmbeddedProperyUtils.setEmbeddedResources(this.embeddedResourcePropertyDescriptors,
+                instance, embeddedResources);
+                
         return instance;
     }
     
@@ -124,16 +125,52 @@ public class HalResourceDeserializer extends StdDeserializer<HalResource>
         return parser.readValueAs(type);
     }
     
-    private Object handleEmbeddedResource(String key, JsonParser parser) throws IOException {
-        Class<?> type = this.embeddedResourceTypes.get(key);
-        if (type == null) {
+    private Object handleEmbeddedResource(String key, JsonParser parser, TypeFactory typeFactory)
+            throws IOException {
+        EmbeddedResourcePropertyDescriptor descriptor = this.embeddedResourcePropertyDescriptors
+                .get(key);
+        if (descriptor == null) {
             if (this.ignoreUnknownProperties) {
                 return null;
             }
             throw new RuntimeException(
                     "Invalid embedded resource key '" + key + "' for type " + targetClass);
         }
+        Class<?> type = descriptor.getType();
+        if (type.isArray()) {
+            return readEmbeddedArray(descriptor, parser, typeFactory);
+        }
+        if (Collection.class.isAssignableFrom(type)) {
+            if (Embedded.DefaultCollectionContentType.class
+                    .equals(descriptor.getCollectionContentType())) {
+                throw new RuntimeException(
+                        "No collection content type for embedded resource: " + key);
+            }
+            return readEmbeddedCollection(descriptor, parser, typeFactory);
+        }
         return parser.readValueAs(type);
+    }
+    
+    private Object readEmbeddedArray(EmbeddedResourcePropertyDescriptor descriptor,
+            JsonParser parser, TypeFactory typeFactory) throws IOException {
+        Collection<?> collection = readEmbeddedCollection(descriptor, parser, typeFactory);
+        Object[] elements = collection.toArray();
+        int length = elements.length;
+        Object array = Array.newInstance(descriptor.getCollectionContentType(), length);
+        for (int i = 0; i < length; i++) {
+            Array.set(array, i, elements[i]);
+        }
+        return array;
+    }
+    
+    private Collection<?> readEmbeddedCollection(EmbeddedResourcePropertyDescriptor descriptor,
+            JsonParser parser, TypeFactory typeFactory) throws IOException {
+        Resources<?> resources = parser.getCodec().readValue(parser, typeFactory
+                .constructParametricType(Resources.class, descriptor.getCollectionContentType()));
+        if (resources == null) {
+            return null;
+        }
+        return resources.getContent();
     }
     
     private boolean shouldIgnoreUnknownProperties(Class<?> clazz) {
