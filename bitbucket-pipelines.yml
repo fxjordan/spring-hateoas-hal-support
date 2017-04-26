@@ -9,4 +9,6 @@ pipelines:
   default:
     - step:
         script: # Modify the commands below to build your repository.
+          - git config --global user.email "felixjordan99@gmx.com"
+          - git config --global user.name "Felix Jordan"
           - mvn clean deploy
