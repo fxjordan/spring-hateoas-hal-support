@@ -1,6 +1,7 @@
 package de.fjobilabs.springframework.hateoas.hal.client;
 
 import java.beans.PropertyDescriptor;
+import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -89,7 +90,9 @@ public class EmbeddedProperyUtils {
         return null;
     }
     
-    public static class EmbeddedResourcePropertyDescriptor {
+    public static class EmbeddedResourcePropertyDescriptor implements Serializable {
+        
+        private static final long serialVersionUID = 201632889205761170L;
         
         private PropertyDescriptor descriptor;
         private String relationName;
