@@ -21,7 +21,7 @@
                 <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
-                <sonar.host.url>http://jenkins.istable.de</sonar.host.url>
+                <sonar.host.url>http://sonar.istable.de</sonar.host.url>
             </properties>
         </profile>
      </profiles>
