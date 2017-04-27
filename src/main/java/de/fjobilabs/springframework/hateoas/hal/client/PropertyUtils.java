@@ -12,6 +12,8 @@ import org.springframework.core.annotation.AnnotationUtils;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import de.fjobilabs.springframework.hateoas.hal.client.exception.PropertyException;
+
 /**
  * @author Felix Jordan
  * @since 28.11.2016 - 17:21:04
@@ -19,7 +21,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public class PropertyUtils {
     
-    public PropertyUtils() {
+    private PropertyUtils() {
     }
     
     public static Map<String, Class<?>> createPropertyTypesMap(Class<?> type) {
@@ -45,18 +47,15 @@ public class PropertyUtils {
             Object value) {
         Method writerMethod = descriptor.getWriteMethod();
         if (writerMethod == null) {
-            throw new RuntimeException("Property '" + descriptor.getName() + "' can't be written");
+            throw new PropertyException("Property '" + descriptor.getName() + "' can't be written");
         }
         try {
             writerMethod.invoke(instance, value);
         } catch (IllegalAccessException e) {
-            throw new RuntimeException(
+            throw new PropertyException(
                     "Cannot acess writer method for property '" + descriptor.getName() + "'", e);
-        } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Failed to write property '" + descriptor.getName() + "'",
-                    e);
-        } catch (InvocationTargetException e) {
-            throw new RuntimeException("Failed to write property '" + descriptor.getName() + "'",
+        } catch (IllegalArgumentException | InvocationTargetException e) {
+            throw new PropertyException("Failed to write property '" + descriptor.getName() + "'",
                     e);
         }
     }
@@ -68,7 +67,7 @@ public class PropertyUtils {
                 return descriptor;
             }
         }
-        throw new RuntimeException(
+        throw new PropertyException(
                 "Failed to find property '" + name + "' for instance " + instance);
     }
     

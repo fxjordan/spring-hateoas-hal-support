@@ -11,6 +11,8 @@ import java.util.Map.Entry;
 import org.springframework.beans.BeanUtils;
 import org.springframework.core.annotation.AnnotationUtils;
 
+import de.fjobilabs.springframework.hateoas.hal.client.exception.EmbeddedResourcePropertyException;
+
 /**
  * @author Felix Jordan
  * @since 15.04.2017 - 21:07:35
@@ -49,19 +51,16 @@ public class EmbeddedProperyUtils {
             Object embeddedResource) {
         Method writerMethod = descriptor.getWriteMethod();
         if (writerMethod == null) {
-            throw new RuntimeException(
+            throw new EmbeddedResourcePropertyException(
                     "Embedded resource '" + descriptor.getName() + "' can't be written");
         }
         try {
             writerMethod.invoke(instance, embeddedResource);
         } catch (IllegalAccessException e) {
-            throw new RuntimeException("Cannot acess writer method for embedded resource '"
+            throw new EmbeddedResourcePropertyException("Cannot acess writer method for embedded resource '"
                     + descriptor.getName() + "'", e);
-        } catch (IllegalArgumentException e) {
-            throw new RuntimeException(
-                    "Failed to write embedded resource '" + descriptor.getName() + "'", e);
-        } catch (InvocationTargetException e) {
-            throw new RuntimeException(
+        } catch (IllegalArgumentException | InvocationTargetException e) {
+            throw new EmbeddedResourcePropertyException(
                     "Failed to write embedded resource '" + descriptor.getName() + "'", e);
         }
     }
