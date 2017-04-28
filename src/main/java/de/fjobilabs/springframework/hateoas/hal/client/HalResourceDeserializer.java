@@ -183,7 +183,7 @@ public class HalResourceDeserializer extends StdDeserializer<HalResource>
         Resources<?> resources = parser.getCodec().readValue(parser, typeFactory
                 .constructParametricType(Resources.class, descriptor.getCollectionContentType()));
         if (resources == null) {
-            return Collections.EMPTY_LIST;
+            return Collections.emptyList();
         }
         return resources.getContent();
     }
