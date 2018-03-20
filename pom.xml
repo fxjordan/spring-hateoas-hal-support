@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
@@ -14,11 +15,21 @@
 	</parent>
 
 	<name>Spring HATEOA HAL Support</name>
-	<url>https://bitbucket.org/fxjordan/spring-hateoas-hal-support</url>
 
 	<properties>
 		<java.version>1.8</java.version>
 	</properties>
+
+	<organization>
+		<name>FJOBI Labs</name>
+		<url>https://www.fjobilabs.de</url>
+	</organization>
+
+	<scm>
+		<url>https://git.fjobilabs.de/users/fxjordan/repos/spring-hateoas-hal-support/</url>
+		<connection>scm:git:https://git.fjobilabs.de/users/fxjordan/spring-hateoas-hal-support.git</connection>
+		<developerConnection>scm:git:https://git.fjobilabs.de/users/fxjordan/repos/spring-hateoas-hal-support.git</developerConnection>
+	</scm>
 
 	<dependencies>
 		<dependency>
@@ -33,13 +44,20 @@
 	</dependencies>
 
 	<build>
-		<extensions>
-			<extension>
-				<groupId>ar.com.synergian</groupId>
-				<artifactId>wagon-git</artifactId>
-				<version>0.2.5</version>
-			</extension>
-		</extensions>
+		<plugins>
+			<plugin>
+				<artifactId>maven-deploy-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>default-deploy</id>
+						<phase>deploy</phase>
+						<goals>
+							<goal>deploy</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
 	</build>
 
 	<reporting>
@@ -77,22 +95,13 @@
 	</reporting>
 
 	<distributionManagement>
-		<repository>
-			<id>fjobi-labs-releases</id>
-			<name>FJOBI Labs Releases</name>
-			<url>git:releases://git@bitbucket.org:FJOBILabs/maven_repository.git</url>
-		</repository>
 		<snapshotRepository>
-			<id>fjobi-labs-snapshots</id>
-			<name>Your Snapshot Repo Name</name>
-			<url>git:snapshots://git@bitbucket.org:FJOBILabs/maven_repository.git</url>
+			<id>fjobilabs-snapshots</id>
+			<url>https://repo.fjobilabs.de/repository/maven-snapshots/</url>
 		</snapshotRepository>
+		<repository>
+			<id>fjobilabs-releases</id>
+			<url>https://repo.fjobilabs.de/repository/maven-releases/</url>
+		</repository>
 	</distributionManagement>
-
-	<pluginRepositories>
-		<pluginRepository>
-			<id>synergian-repo</id>
-			<url>https://raw.github.com/synergian/wagon-git/releases</url>
-		</pluginRepository>
-	</pluginRepositories>
 </project>

@@ -1,4 +1,0 @@
-{  
-    "sonarHost": "http://sonar.istable.de",
-    "sonarProjectKey": "de.fjobilabs:spring-hateoas-hal-support"
-}
