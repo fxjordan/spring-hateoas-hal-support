@@ -36,12 +36,26 @@ public class HalEmbeddedResourceSupport extends Resources<EmbeddedWrapper> {
         this.embeddedWrappers = new EmbeddedWrappers(false);
     }
     
-    public void embedd(ResourceSupport resource) {
-        this.embeddedResources.add(this.embeddedWrappers.wrap(resource));
+    /**
+     * Embeds an object or collection into the resource.
+     * 
+     * @param object The object to embed.
+     */
+    public void embedd(Object object) {
+        /*
+         * TODO Automatically use relation provides by @Relation annotation
+         */
+        this.embeddedResources.add(this.embeddedWrappers.wrap(object));
     }
     
-    public void embedd(ResourceSupport resource, String rel) {
-        this.embeddedResources.add(this.embeddedWrappers.wrap(resource, rel));
+    /**
+     * Embeds an object or collection into the resource.
+     * 
+     * @param object The object to embed.
+     * @param rel The relation to use.
+     */
+    public void embedd(Object object, String rel) {
+        this.embeddedResources.add(this.embeddedWrappers.wrap(object, rel));
     }
     
     @JsonProperty("_embedded")
