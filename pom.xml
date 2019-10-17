@@ -94,6 +94,19 @@
 		</plugins>
 	</reporting>
 
+	<repositories>
+		<repository>
+			<id>fjobilabs-snapshots</id>
+			<name>FJOBILabs Snapshots</name>
+			<url>https://repo.fjobilabs.de/repository/maven-snapshots/</url>
+		</repository>
+		<repository>
+			<id>fjobilabs-releases</id>
+			<name>FJOBILabs Releases</name>
+			<url>https://repo.fjobilabs.de/repository/maven-releases/</url>
+		</repository>
+	</repositories>
+
 	<distributionManagement>
 		<snapshotRepository>
 			<id>fjobilabs-snapshots</id>
